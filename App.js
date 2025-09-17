@@ -32,8 +32,8 @@ export default function App() {
                                 return <Ionicons name={iconName} size={size} color={color} />;
                             },
                             tabBarActiveTintColor: '#007AFF',
-                            tabBarInactiveTintColor: 'gray',
-                            tabBarStyle: { paddingBottom: 5, height: 60 },
+                            tabBarInactiveTintColor: '#fff',
+                            tabBarStyle: {backgroundColor: "#000" ,paddingBottom: 5, height: 60, borderTopWidth: 0 },
                         })}
                     >
                         <Tab.Screen name="Hoy" component={Home} />

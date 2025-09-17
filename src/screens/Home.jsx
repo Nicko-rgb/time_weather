@@ -1,7 +1,8 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ImageBackground } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
+import atardecer from '../../assets/Atardecer.jpeg';
 
 import WeatherDetail from '../components/WeatherDetail';
 import HourlyForecast from '../components/HourlyForecast';
@@ -33,8 +34,10 @@ export default function Home() {
     });
 
     return (
-        <View style={styles.container}>
+        <ImageBackground source={atardecer} style={styles.container} resizeMode="cover">
+            <View style={styles.overlay} />
             {/* Encabezado */}
+            <View style={{flex: 1}}>
             <View style={styles.header}>
                 <Ionicons name="location-outline" size={22} color="#fff" />
                 <Text style={styles.location}>{weather.location}</Text>
@@ -71,12 +74,14 @@ export default function Home() {
                     showsHorizontalScrollIndicator={false}
                 />
             </View>
-        </View>
+            </View>
+        </ImageBackground>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#1E1E2C" },
+    container: { flex: 1 },
+    overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
     header: { flexDirection: "row", alignItems: "center", padding: 16 },
     location: { color: "#fff", fontSize: 18, fontWeight: "600", marginLeft: 8, flex: 1 },
     settings: { padding: 4 },
