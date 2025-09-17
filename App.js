@@ -17,7 +17,7 @@ export default function App() {
                 <SafeAreaView style={{ flex: 1, backgroundColor: '#1E1E2C' }}>
                     
                     {/*Control de la barra de estado */}
-                    <StatusBar barStyle="light-content" backgroundColor="#1E1E2C" />
+                    <StatusBar barStyle="light-content" />
 
                     <Tab.Navigator
                         screenOptions={({ route }) => ({
