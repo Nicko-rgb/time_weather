@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native
 import { Ionicons } from '@expo/vector-icons';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 
-import WeatherDetail from '../components/WeatherDetail';
+import WeatherDetail from '../components/pronostico/WeatherDetail';
 import HourlyForecast from '../components/HourlyForecast';
 
 export default function Home() {
