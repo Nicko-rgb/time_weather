@@ -11,22 +11,39 @@ const { width } = Dimensions.get("window");
 
 export default function Home() {
     const [menuVisible, setMenuVisible] = useState(false);
-    const slideAnim = useRef(new Animated.Value(-width)).current; // menu fuera de pantalla
+    const slideAnim = useRef(new Animated.Value(-width)).current; // menú fuera de pantalla
+    const fadeAnim = useRef(new Animated.Value(0)).current; // opacidad del overlay
 
     const toggleMenu = () => {
         if (menuVisible) {
-            Animated.timing(slideAnim, {
-                toValue: -width,
-                duration: 300,
-                useNativeDriver: true,
-            }).start(() => setMenuVisible(false));
+            // cerrar menú
+            Animated.parallel([
+                Animated.timing(slideAnim, {
+                    toValue: -width,
+                    duration: 300,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(fadeAnim, {
+                    toValue: 0,
+                    duration: 300,
+                    useNativeDriver: true,
+                }),
+            ]).start(() => setMenuVisible(false));
         } else {
+            // abrir menú
             setMenuVisible(true);
-            Animated.timing(slideAnim, {
-                toValue: 0,
-                duration: 300,
-                useNativeDriver: true,
-            }).start();
+            Animated.parallel([
+                Animated.timing(slideAnim, {
+                    toValue: 0,
+                    duration: 300,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(fadeAnim, {
+                    toValue: 1,
+                    duration: 300,
+                    useNativeDriver: true,
+                }),
+            ]).start();
         }
     };
 
@@ -63,13 +80,9 @@ export default function Home() {
                         source={require("../assets/lotties/Location.json")}
                         autoPlay
                         loop
-                        colorFilters={[{
-                            keypath: '*',
-                            color: '#fff'
-                        }]}
+                        colorFilters={[{ keypath: '*', color: '#fff' }]}
                         style={{ width: 30, height: 30, top: 3, marginLeft: -8 }}
                     />
-                    {/* <Ionicons name="location-outline" size={22} color="#fff" /> */}
                     <Text style={styles.location}>{weather.location}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.settings} onPress={toggleMenu}>
@@ -106,34 +119,40 @@ export default function Home() {
                 />
             </View>
 
-            {/* Fondo oscuro al abrir el menú */}
+            {/* Overlay con fade */}
             {menuVisible && (
-                <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={toggleMenu} />
+                <Animated.View
+                    style={[styles.overlay, { opacity: fadeAnim }]}
+                >
+                    <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={toggleMenu} />
+                </Animated.View>
             )}
 
             {/* Menú lateral */}
-            <Animated.View style={[styles.sideMenu, { transform: [{ translateX: slideAnim }] }]}>
-                <Text style={styles.menuTitle}>Menú</Text>
-                <TouchableOpacity style={styles.menuItem}>
-                    <Ionicons name="home-outline" size={22} color="#fff" />
-                    <Text style={styles.menuText}>Inicio</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.menuItem}>
-                    <Ionicons name="cloud-outline" size={22} color="#fff" />
-                    <Text style={styles.menuText}>Pronósticos</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.menuItem}>
-                    <Ionicons name="settings-outline" size={22} color="#fff" />
-                    <Text style={styles.menuText}>Configuración</Text>
-                </TouchableOpacity>
-            </Animated.View>
+            {menuVisible && (
+                <Animated.View style={[styles.sideMenu, { transform: [{ translateX: slideAnim }] }]}>
+                    <Text style={styles.menuTitle}>Menú</Text>
+                    <TouchableOpacity style={styles.menuItem}>
+                        <Ionicons name="home-outline" size={22} color="#fff" />
+                        <Text style={styles.menuText}>Inicio</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.menuItem}>
+                        <Ionicons name="cloud-outline" size={22} color="#fff" />
+                        <Text style={styles.menuText}>Pronósticos</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.menuItem}>
+                        <Ionicons name="settings-outline" size={22} color="#fff" />
+                        <Text style={styles.menuText}>Configuración</Text>
+                    </TouchableOpacity>
+                </Animated.View>
+            )}
         </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: "#1E1E2C" },
-    header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 6, },
+    header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 6 },
     btnLocation: { flexDirection: "row", alignItems: "center", gap: 3, padding: 8 },
     location: { color: "#fff", fontSize: 18, fontWeight: "600" },
     settings: { padding: 8 },
@@ -145,22 +164,27 @@ const styles = StyleSheet.create({
     forecast: { paddingHorizontal: 16 },
     subtitle: { color: "#fff", fontSize: 18, fontWeight: "600", marginBottom: 10 },
 
-    // Estilos menú lateral
+    // Overlay
     overlay: {
         ...StyleSheet.absoluteFillObject,
         backgroundColor: "rgba(0,0,0,0.5)",
+        zIndex: 5,
     },
+
+    // Menú lateral
     sideMenu: {
         position: "absolute",
         left: 0,
         top: 0,
         bottom: 0,
         width: width * 0.7,
-        backgroundColor: "#2C2C3C",
+        backgroundColor: "#1E1E2C",
         padding: 20,
         paddingTop: 60,
         zIndex: 10,
         elevation: 10,
+        // borderTopRightRadius: 20,
+        // borderBottomRightRadius: 20,
     },
     menuTitle: { color: "#fff", fontSize: 20, fontWeight: "700", marginBottom: 20 },
     menuItem: { flexDirection: "row", alignItems: "center", marginVertical: 12, gap: 10 },
