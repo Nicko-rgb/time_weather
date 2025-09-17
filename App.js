@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'react-native';
 
 import Home from './src/screens/Home';
-import Forecast from './src/screens/Pronosticos';
+import Forecast from './src/screens/pronostico/Pronosticos';
 
 const Tab = createBottomTabNavigator();
 
