@@ -95,7 +95,21 @@ export default function Home() {
 
             {/* Clima actual */}
             <View style={styles.mainWeather}>
-                <Ionicons name="sunny-outline" size={90} color="yellow" />
+                {/* <LottieView
+                    
+                    autoPlay
+                    loop
+                    style={{width: 170, height: 170}}
+                /> */}
+                <LottieView
+                    source={require('../assets/lotties/Summer.json')}
+                    // source={require('../assets/lotties/overcast.json')}
+                    // source={require('../assets/lotties/Weather-storm.json')}
+                    // source={require('../assets/lotties/Weather-windy.json')}
+                    autoPlay
+                    loop
+                    style={{ width: 170, height: 170 }}
+                />
                 <Text style={styles.temp}>{weather.temperature}°C</Text>
                 <Text style={styles.condition}>{weather.condition}</Text>
             </View>
@@ -158,7 +172,7 @@ const styles = StyleSheet.create({
     settings: { padding: 8 },
     date: { color: "#fff", fontSize: 18, textAlign: "center", textTransform: "capitalize", fontWeight: "600" },
     mainWeather: { alignItems: "center", marginTop: 30 },
-    temp: { color: "#fff", fontSize: 64, fontWeight: "bold" },
+    temp: { color: "#fff", fontSize: 64, fontWeight: "bold", },
     condition: { color: "#ccc", fontSize: 20 },
     detailsRow: { flexDirection: "row", justifyContent: "space-around", marginVertical: 30 },
     forecast: { paddingHorizontal: 16 },
