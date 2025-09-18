@@ -4,7 +4,7 @@ import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import { useState, useRef } from 'react';
 import LottieView from "lottie-react-native";
 
-import WeatherDetail from '../components/WeatherDetail';
+import WeatherDetail from '../components/pronostico/WeatherDetail';
 import HourlyForecast from '../components/HourlyForecast';
 
 const { width } = Dimensions.get("window");
