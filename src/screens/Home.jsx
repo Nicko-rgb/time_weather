@@ -1,7 +1,6 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, ImageBackground } from 'react-native';
+import { StyleSheet, FlatList, ImageBackground } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import atardecer from '../../assets/Atardecer.jpeg';
 import { View, Text, TouchableOpacity, Dimensions, ActivityIndicator, Alert, ScrollView, Animated } from 'react-native';
 import { useState, useEffect, useRef } from 'react';
@@ -12,11 +11,9 @@ import { useCallback } from 'react';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import LottieView from "lottie-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
 import { styles } from '../styles/styleHome';
 import WeatherDetail from '../components/pronostico/WeatherDetail';
 import HourlyForecast from '../components/HourlyForecast';
-import { ImageBackground } from 'react-native-web';
 
 const { width } = Dimensions.get("window");
 
