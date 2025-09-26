@@ -28,8 +28,8 @@ function Tabs() {
                     return <Ionicons name={iconName} size={size} color={color} />;
                 },
                 tabBarActiveTintColor: '#007AFF',
-                tabBarInactiveTintColor: 'gray',
-                tabBarStyle: { paddingBottom: 5, height: 60 },
+                tabBarInactiveTintColor: '#fff',
+                tabBarStyle: { paddingBottom: 5, height: 60, backgroundColor: '#000', borderTopColor: 'transparent',},
             })}
         >
             <Tab.Screen name="Hoy" component={Home} />

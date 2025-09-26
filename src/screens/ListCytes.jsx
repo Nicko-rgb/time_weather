@@ -17,6 +17,10 @@ const API_KEY_OPENWEATHER = "93fdcc2804888020db0e3ad6d5dcf1ad";
 const API_KEY_VISUAL_CROSSING = "3T269THQBHGMR3YRCEBDVCXYL";
 
 export default function ListCytes() {
+    // Estado para sugerencias filtradas y visibilidad
+    const [suggestions, setSuggestions] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
     const [cityInput, setCityInput] = useState("");
     const [cities, setCities] = useState([]);
     const [currentLocation, setCurrentLocation] = useState(null);
@@ -280,8 +284,74 @@ export default function ListCytes() {
                     placeholder="Buscar ciudad..."
                     placeholderTextColor="#aaa"
                     value={cityInput}
-                    onChangeText={setCityInput}
+                    onChangeText={async text => {
+                        setCityInput(text);
+                        if (text.length > 0) {
+                            setIsLoadingSuggestions(true);
+                            try {
+                                const response = await fetch(
+                                    `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(text)}&limit=5&appid=${API_KEY_OPENWEATHER}`
+                                );
+                                const data = await response.json();
+                                if (Array.isArray(data) && data.length > 0) {
+                                    setSuggestions(data);
+                                    setShowSuggestions(true);
+                                } else {
+                                    setSuggestions([]);
+                                    setShowSuggestions(false);
+                                }
+                            } catch (error) {
+                                setSuggestions([]);
+                                setShowSuggestions(false);
+                            } finally {
+                                setIsLoadingSuggestions(false);
+                            }
+                        } else {
+                            setSuggestions([]);
+                            setShowSuggestions(false);
+                        }
+                    }}
+                    autoCorrect={false}
+                    autoCapitalize="words"
                 />
+                {cityInput.length > 0 && showSuggestions && (
+    <View style={{
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: 52, // Ajusta según el alto del input
+        backgroundColor: 'rgba(30,30,55)',
+        borderRadius: 10,
+        marginTop: 2,
+        elevation: 5,
+        zIndex: 100,
+        maxHeight: 220,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.18,
+        shadowRadius: 4,
+    }}>
+        {isLoadingSuggestions ? (
+            <Text style={{ padding: 10, color: '#888' }}>Buscando...</Text>
+        ) : suggestions.length === 0 ? (
+            <Text style={{ padding: 10, color: '#888' }}>Sin resultados</Text>
+        ) : (
+            suggestions.map((suggestion, idx) => (
+                <TouchableOpacity
+                    key={suggestion.lat + '-' + suggestion.lon + '-' + idx}
+                    style={{ padding: 10, borderBottomWidth: idx !== suggestions.length - 1 ? 1 : 0, borderColor: '#eee' }}
+                    onPress={() => {
+                        setCityInput(`${suggestion.name}${suggestion.state ? ', ' + suggestion.state : ''}, ${suggestion.country}`);
+                        setSuggestions([]);
+                        setShowSuggestions(false);
+                    }}
+                >
+                    <Text style={{ color: '#fff' }}>{suggestion.name}{suggestion.state ? ', ' + suggestion.state : ''}, {suggestion.country}</Text>
+                </TouchableOpacity>
+            ))
+        )}
+    </View>
+)}
                 <TouchableOpacity style={styles.addBtn} onPress={handleAddCity}>
                     <Text style={{ color: "#fff", fontSize: 16 }}>＋</Text>
                 </TouchableOpacity>
