@@ -12,7 +12,7 @@ export const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
-        paddingHorizontal: 16
+        paddingHorizontal: 5
     },
     scrollContainer: {
         paddingBottom: 20
@@ -162,7 +162,7 @@ export const styles = StyleSheet.create({
     temp: {
         fontSize: 64,
         color: '#fbbf24',
-        fontWeight: '300'
+        fontWeight: '700'
     },
     weatherDescription: {
         fontSize: 20,
@@ -194,13 +194,9 @@ export const styles = StyleSheet.create({
 
     // Forecast Styles
     forecastSection: {
-        backgroundColor: 'rgba(255, 255, 255, 0.15)',
         borderRadius: 20,
-        padding: 20,
         marginBottom: 20,
         backdropFilter: 'blur(10px)',
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.2)'
     },
     sectionTitle: {
         fontSize: 20,
