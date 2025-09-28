@@ -14,7 +14,10 @@ import * as Location from "expo-location";
 import { useNavigation } from "@react-navigation/native";
 
 const API_KEY_OPENWEATHER = "93fdcc2804888020db0e3ad6d5dcf1ad";
-const API_KEY_VISUAL_CROSSING = "3T269THQBHGMR3YRCEBDVCXYL";
+// const API_KEY_OPENWEATHER = "1d25bc1c1667f67f7704649e073d7fb6";
+
+// const API_KEY_VISUAL_CROSSING = "3T269THQBHGMR3YRCEBDVCXYL";
+const API_KEY_VISUAL_CROSSING = "7P98GLNRNTN8SU3MW9HZ22RYG";
 
 export default function ListCytes() {
     // Estado para sugerencias filtradas y visibilidad

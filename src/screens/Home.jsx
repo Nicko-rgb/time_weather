@@ -33,7 +33,12 @@ export default function Home() {
     const route = useRoute();
 
     // 🔑 Tu API Key de Visual Crossing
-    const API_KEY = "3T269THQBHGMR3YRCEBDVCXYL";
+    // const API_KEY = "6Q6H8KQSA9PFUEBZRH3BQBFSY";
+    const API_KEY = "7P98GLNRNTN8SU3MW9HZ22RYG";
+
+    // Usar OpenWeatherMap para geocoding (obtener coordenadas)
+    // const API_KEY_OPENWEATHER = "93fdcc2804888020db0e3ad6d5dcf1ad";
+    const API_KEY_OPENWEATHER = "1d25bc1c1667f67f7704649e073d7fb6";
 
     // ✅ Cargar todas las ubicaciones (actual + guardadas)
     const loadAllLocations = async () => {
@@ -208,7 +213,7 @@ export default function Home() {
             }));
 
             // Solo actualizar weather si es la ubicación actual
-            if (allLocations[currentLocationIndex]?.id === location.id || 
+            if (allLocations[currentLocationIndex]?.id === location.id ||
                 allLocations[currentLocationIndex]?.name === location.name) {
                 setWeather(weatherInfo);
             }
@@ -226,7 +231,7 @@ export default function Home() {
             }));
 
             // Solo actualizar hourlyData si es la ubicación actual
-            if (allLocations[currentLocationIndex]?.id === location.id || 
+            if (allLocations[currentLocationIndex]?.id === location.id ||
                 allLocations[currentLocationIndex]?.name === location.name) {
                 setHourlyData(hourly);
             }
@@ -264,23 +269,23 @@ export default function Home() {
                 setCurrentLocationIndex(pageIndex);
                 const newLocation = allLocations[pageIndex];
                 setCurrentLocationData(newLocation);
-                
+
                 // Obtener datos del clima para la nueva ubicación
                 const locationKey = newLocation.id || newLocation.name;
-                
+
                 // Si ya tenemos datos del clima para esta ubicación, usarlos
-            if (weatherData[locationKey]) {
-                setWeather(weatherData[locationKey]);
-            } else {
-                // Si no tenemos datos, obtenerlos
-                fetchWeatherForLocation(newLocation);
-            }
-            
-            // Si ya tenemos datos por horas para esta ubicación, usarlos
-            if (hourlyDataByLocation[locationKey]) {
-                setHourlyData(hourlyDataByLocation[locationKey]);
-            }
-                
+                if (weatherData[locationKey]) {
+                    setWeather(weatherData[locationKey]);
+                } else {
+                    // Si no tenemos datos, obtenerlos
+                    fetchWeatherForLocation(newLocation);
+                }
+
+                // Si ya tenemos datos por horas para esta ubicación, usarlos
+                if (hourlyDataByLocation[locationKey]) {
+                    setHourlyData(hourlyDataByLocation[locationKey]);
+                }
+
                 // Animación de entrada
                 Animated.parallel([
                     Animated.timing(fadeAnim, {
@@ -302,11 +307,11 @@ export default function Home() {
     const goToLocation = (index) => {
         if (scrollViewRef.current && index >= 0 && index < allLocations.length) {
             scrollViewRef.current.scrollTo({ x: index * width, animated: true });
-            
+
             // Obtener datos del clima para la nueva ubicación
             const location = allLocations[index];
             const locationKey = location.id || location.name;
-            
+
             // Si ya tenemos datos del clima para esta ubicación, usarlos
             if (weatherData[locationKey]) {
                 setWeather(weatherData[locationKey]);
@@ -314,7 +319,7 @@ export default function Home() {
                 // Si no tenemos datos, obtenerlos
                 fetchWeatherForLocation(location);
             }
-            
+
             // Si ya tenemos datos por horas para esta ubicación, usarlos
             if (hourlyDataByLocation[locationKey]) {
                 setHourlyData(hourlyDataByLocation[locationKey]);
@@ -400,8 +405,6 @@ export default function Home() {
         try {
             setLoading(true);
 
-            // Usar OpenWeatherMap para geocoding (obtener coordenadas)
-            const API_KEY_OPENWEATHER = "93fdcc2804888020db0e3ad6d5dcf1ad";
             const geoResponse = await fetch(
                 `https://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=${API_KEY_OPENWEATHER}`
             );
@@ -518,7 +521,7 @@ export default function Home() {
                     {allLocations.map((location, index) => {
                         const locationKey = location.id || location.name;
                         const locationWeather = weatherData[locationKey] || weather;
-                        
+
                         return (
                             <View key={location.id || index} style={{ width, flex: 1 }}>
                                 {/* Encabezado de cada ciudad */}
@@ -533,58 +536,58 @@ export default function Home() {
                                 <Text style={styles.date}>{formattedDate}</Text>
                                 {/* Clima actual */}
                                 {locationWeather && (
-                                <Animated.View
-                                    style={[
-                                        styles.mainWeather,
-                                        {
-                                            opacity: fadeAnim,
-                                            transform: [{ scale: scaleAnim }]
-                                        }
-                                    ]}
-                                >
-                                    <LottieView
-                                        source={getLottieSource(locationWeather.condition, locationWeather.temperature)}
-                                        autoPlay
-                                        loop
-                                        style={{ width: 170, height: 170 }}
-                                    />
-                                    <Text style={styles.temp}>{locationWeather.temperature}°C</Text>
-                                    <Text style={styles.condition}>{locationWeather.condition}</Text>
-                                    {/* Datos adicionales */}
-                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 16, width: '100%' }}>
-                                        <View style={{ alignItems: 'center', flex: 1 }}>
-                                            <Text style={{ color: '#aaa', fontSize: 13 }}>Sensación</Text>
-                                            <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{locationWeather.feelsLike}°C</Text>
+                                    <Animated.View
+                                        style={[
+                                            styles.mainWeather,
+                                            {
+                                                opacity: fadeAnim,
+                                                transform: [{ scale: scaleAnim }]
+                                            }
+                                        ]}
+                                    >
+                                        <LottieView
+                                            source={getLottieSource(locationWeather.condition, locationWeather.temperature)}
+                                            autoPlay
+                                            loop
+                                            style={{ width: 170, height: 170 }}
+                                        />
+                                        <Text style={styles.temp}>{locationWeather.temperature}°C</Text>
+                                        <Text style={styles.condition}>{locationWeather.condition}</Text>
+                                        {/* Datos adicionales */}
+                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 16, width: '100%' }}>
+                                            <View style={{ alignItems: 'center', flex: 1 }}>
+                                                <Text style={{ color: '#aaa', fontSize: 13 }}>Sensación</Text>
+                                                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{locationWeather.feelsLike}°C</Text>
+                                            </View>
+                                            <View style={{ alignItems: 'center', flex: 1 }}>
+                                                <Text style={{ color: '#aaa', fontSize: 13 }}>Humedad</Text>
+                                                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{locationWeather.humidity}%</Text>
+                                            </View>
+                                            <View style={{ alignItems: 'center', flex: 1 }}>
+                                                <Text style={{ color: '#aaa', fontSize: 13 }}>Viento</Text>
+                                                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{locationWeather.wind} km/h</Text>
+                                            </View>
+                                            <View style={{ alignItems: 'center', flex: 1 }}>
+                                                <Text style={{ color: '#aaa', fontSize: 13 }}>Presión</Text>
+                                                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{locationWeather.pressure ? locationWeather.pressure : '--'} hPa</Text>
+                                            </View>
                                         </View>
-                                        <View style={{ alignItems: 'center', flex: 1 }}>
-                                            <Text style={{ color: '#aaa', fontSize: 13 }}>Humedad</Text>
-                                            <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{locationWeather.humidity}%</Text>
-                                        </View>
-                                        <View style={{ alignItems: 'center', flex: 1 }}>
-                                            <Text style={{ color: '#aaa', fontSize: 13 }}>Viento</Text>
-                                            <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{locationWeather.wind} km/h</Text>
-                                        </View>
-                                        <View style={{ alignItems: 'center', flex: 1 }}>
-                                            <Text style={{ color: '#aaa', fontSize: 13 }}>Presión</Text>
-                                            <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{locationWeather.pressure ? locationWeather.pressure : '--'} hPa</Text>
-                                        </View>
-                                    </View>
-                                    {/* Frase motivacional */}
-                                    <Text style={{ color: '#6C63FF', fontSize: 15, marginTop: 18, fontWeight: '600', textAlign: 'center', letterSpacing: 0.2 }}>
-                                        {getWeatherPhrase(locationWeather.condition)}
-                                    </Text>
-                                </Animated.View>
-                            )}
-                            {/* Pronóstico por horas */}
-                            <View style={styles.forecast}>
-                                <Text style={styles.subtitle}>Pronóstico por horas</Text>
-                                <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.forecastScroll} nestedScrollEnabled={true}>
-                                    {(hourlyDataByLocation[locationKey] || hourlyData).map((item, index) => (
-                                        <HourlyForecast key={index} data={item} />
-                                    ))}
-                                </ScrollView>
+                                        {/* Frase motivacional */}
+                                        <Text style={{ color: '#6C63FF', fontSize: 15, marginTop: 18, fontWeight: '600', textAlign: 'center', letterSpacing: 0.2 }}>
+                                            {getWeatherPhrase(locationWeather.condition)}
+                                        </Text>
+                                    </Animated.View>
+                                )}
+                                {/* Pronóstico por horas */}
+                                <View style={styles.forecast}>
+                                    <Text style={styles.subtitle}>Pronóstico por horas</Text>
+                                    <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.forecastScroll} nestedScrollEnabled={true}>
+                                        {(hourlyDataByLocation[locationKey] || hourlyData).map((item, index) => (
+                                            <HourlyForecast key={index} data={item} />
+                                        ))}
+                                    </ScrollView>
+                                </View>
                             </View>
-                        </View>
                         );
                     })}
                 </ScrollView>
