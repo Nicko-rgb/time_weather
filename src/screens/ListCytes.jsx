@@ -22,6 +22,7 @@ export default function ListCytes() {
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
     const [cityInput, setCityInput] = useState("");
+    const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
     const [cities, setCities] = useState([]);
     const [currentLocation, setCurrentLocation] = useState(null);
     const [loadingLocation, setLoadingLocation] = useState(true);
@@ -275,7 +276,10 @@ export default function ListCytes() {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Ciudades rápidas 🌍</Text>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={{ position: 'absolute', top: 30, left: 15, zIndex: 10, padding: 10 }}>
+                <Text style={{ color: '#fff', fontSize: 18 }}>← Volver</Text>
+            </TouchableOpacity>
+            <Text style={[styles.title, { marginTop: 50 }]}>Ciudades rápidas 🌍</Text>
 
             {/* Buscador */}
             <View style={styles.searchContainer}>
@@ -286,11 +290,12 @@ export default function ListCytes() {
                     value={cityInput}
                     onChangeText={async text => {
                         setCityInput(text);
+                        setSelectedSuggestionIndex(-1);
                         if (text.length > 0) {
                             setIsLoadingSuggestions(true);
                             try {
                                 const response = await fetch(
-                                    `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(text)}&limit=5&appid=${API_KEY_OPENWEATHER}`
+                                    `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(text)}&limit=7&appid=${API_KEY_OPENWEATHER}`
                                 );
                                 const data = await response.json();
                                 if (Array.isArray(data) && data.length > 0) {
@@ -313,42 +318,81 @@ export default function ListCytes() {
                     }}
                     autoCorrect={false}
                     autoCapitalize="words"
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                    onFocus={() => cityInput.length > 0 && suggestions.length > 0 && setShowSuggestions(true)}
+                    onKeyPress={({ nativeEvent }) => {
+                        if (!showSuggestions || suggestions.length === 0) return;
+                        if (nativeEvent.key === 'ArrowDown') {
+                            setSelectedSuggestionIndex(idx => (idx + 1) % suggestions.length);
+                        } else if (nativeEvent.key === 'ArrowUp') {
+                            setSelectedSuggestionIndex(idx => (idx - 1 + suggestions.length) % suggestions.length);
+                        } else if (nativeEvent.key === 'Enter' && selectedSuggestionIndex >= 0) {
+                            const suggestion = suggestions[selectedSuggestionIndex];
+                            const cityDisplay = `${suggestion.name}${suggestion.state ? ', ' + suggestion.state : ''}, ${suggestion.country}`;
+                            setCityInput(cityDisplay);
+                            setSuggestions([]);
+                            setShowSuggestions(false);
+                            setSelectedSuggestionIndex(-1);
+                        }
+                    }}
                 />
                 {cityInput.length > 0 && showSuggestions && (
     <View style={{
         position: 'absolute',
         left: 0,
         right: 0,
-        top: 52, // Ajusta según el alto del input
-        backgroundColor: 'rgba(30,30,55)',
+        top: 52,
+        backgroundColor: '#23233a',
         borderRadius: 10,
         marginTop: 2,
         elevation: 5,
         zIndex: 100,
-        maxHeight: 220,
+        maxHeight: 260,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.18,
         shadowRadius: 4,
+        overflow: 'hidden',
     }}>
         {isLoadingSuggestions ? (
-            <Text style={{ padding: 10, color: '#888' }}>Buscando...</Text>
+            <Text style={{ padding: 12, color: '#888', textAlign: 'center' }}>Buscando...</Text>
         ) : suggestions.length === 0 ? (
-            <Text style={{ padding: 10, color: '#888' }}>Sin resultados</Text>
+            <Text style={{ padding: 12, color: '#888', textAlign: 'center' }}>Sin resultados</Text>
         ) : (
-            suggestions.map((suggestion, idx) => (
-                <TouchableOpacity
-                    key={suggestion.lat + '-' + suggestion.lon + '-' + idx}
-                    style={{ padding: 10, borderBottomWidth: idx !== suggestions.length - 1 ? 1 : 0, borderColor: '#eee' }}
-                    onPress={() => {
-                        setCityInput(`${suggestion.name}${suggestion.state ? ', ' + suggestion.state : ''}, ${suggestion.country}`);
-                        setSuggestions([]);
-                        setShowSuggestions(false);
-                    }}
-                >
-                    <Text style={{ color: '#fff' }}>{suggestion.name}{suggestion.state ? ', ' + suggestion.state : ''}, {suggestion.country}</Text>
-                </TouchableOpacity>
-            ))
+            suggestions.map((suggestion, idx) => {
+                // Resaltar coincidencias
+                const regex = new RegExp(`(${cityInput})`, 'ig');
+                const cityDisplay = `${suggestion.name}${suggestion.state ? ', ' + suggestion.state : ''}, ${suggestion.country}`;
+                const parts = cityDisplay.split(regex);
+                return (
+                    <TouchableOpacity
+                        key={suggestion.lat + '-' + suggestion.lon + '-' + idx}
+                        style={{
+                            padding: 14,
+                            backgroundColor: idx === selectedSuggestionIndex ? '#36366a' : 'transparent',
+                            borderBottomWidth: idx !== suggestions.length - 1 ? 1 : 0,
+                            borderColor: '#333',
+                        }}
+                        onPress={() => {
+                            setCityInput(cityDisplay);
+                            setSuggestions([]);
+                            setShowSuggestions(false);
+                            setSelectedSuggestionIndex(-1);
+                        }}
+                        onMouseEnter={() => setSelectedSuggestionIndex(idx)}
+                    >
+                        <Text style={{ color: '#fff', fontSize: 16 }}>
+                            {parts.map((part, i) =>
+                                regex.test(part) ? (
+                                    <Text key={i} style={{ color: '#6C63FF', fontWeight: 'bold' }}>{part}</Text>
+                                ) : (
+                                    <Text key={i}>{part}</Text>
+                                )
+                            )}
+                        </Text>
+                    </TouchableOpacity>
+                );
+            })
         )}
     </View>
 )}

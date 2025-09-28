@@ -1,22 +1,17 @@
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, ImageBackground } from 'react-native';
+import { View, Text, TouchableOpacity, Dimensions, ActivityIndicator, Alert, ScrollView, Animated, FlatList, ImageBackground } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
-import atardecer from '../../assets/Atardecer.jpeg';
-import { View, Text, TouchableOpacity, Dimensions, ActivityIndicator, Alert, ScrollView, Animated } from 'react-native';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import * as Location from "expo-location";
 import axios from "axios";
 import { useNavigation, useRoute, useFocusEffect } from "@react-navigation/native";
-import { useCallback } from 'react';
-import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import LottieView from "lottie-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { styles } from '../styles/styleHome';
 import WeatherDetail from '../components/pronostico/WeatherDetail';
 import HourlyForecast from '../components/HourlyForecast';
-import { ImageBackground } from 'react-native-web';
 
 const { width } = Dimensions.get("window");
 
@@ -201,6 +196,7 @@ export default function Home() {
                 feelsLike: Math.round(closestHour.feelslike ?? closestHour.temp),
                 humidity: Math.round(closestHour.humidity ?? 0),
                 wind: Math.round(closestHour.windspeed ?? 0),
+                pressure: Math.round(closestHour.pressure ?? 0),
             };
 
             setWeather(weatherData);
@@ -220,46 +216,49 @@ export default function Home() {
     };
 
     // ✅ Manejar cambio de página en ScrollView con animaciones
-    const handleScroll = (event) => {
-        const contentOffsetX = event.nativeEvent.contentOffset.x;
-        const pageIndex = Math.round(contentOffsetX / width);
-        
-        if (pageIndex !== currentLocationIndex && pageIndex >= 0 && pageIndex < allLocations.length) {
-            // Animación de salida
+    const lastContentOffsetX = useRef(0);
+const handleScroll = (event) => {
+    const contentOffsetX = event.nativeEvent.contentOffset.x;
+    const pageIndex = Math.round(contentOffsetX / width);
+    let direction = 'right';
+    if (contentOffsetX < lastContentOffsetX.current) direction = 'left';
+    lastContentOffsetX.current = contentOffsetX;
+
+    if (pageIndex !== currentLocationIndex && pageIndex >= 0 && pageIndex < allLocations.length) {
+        // Animación de salida
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 0.3,
+                duration: 150,
+                useNativeDriver: true,
+            }),
+            Animated.timing(scaleAnim, {
+                toValue: direction === 'right' ? 0.95 : 1.05,
+                duration: 150,
+                useNativeDriver: true,
+            })
+        ]).start(() => {
+            // Cambiar datos
+            setCurrentLocationIndex(pageIndex);
+            const newLocation = allLocations[pageIndex];
+            setCurrentLocationData(newLocation);
+            fetchWeatherForLocation(newLocation);
+            // Animación de entrada
             Animated.parallel([
                 Animated.timing(fadeAnim, {
-                    toValue: 0.3,
-                    duration: 150,
+                    toValue: 1,
+                    duration: 200,
                     useNativeDriver: true,
                 }),
                 Animated.timing(scaleAnim, {
-                    toValue: 0.95,
-                    duration: 150,
+                    toValue: 1,
+                    duration: 200,
                     useNativeDriver: true,
                 })
-            ]).start(() => {
-                // Cambiar datos
-                setCurrentLocationIndex(pageIndex);
-                const newLocation = allLocations[pageIndex];
-                setCurrentLocationData(newLocation);
-                fetchWeatherForLocation(newLocation);
-                
-                // Animación de entrada
-                Animated.parallel([
-                    Animated.timing(fadeAnim, {
-                        toValue: 1,
-                        duration: 200,
-                        useNativeDriver: true,
-                    }),
-                    Animated.timing(scaleAnim, {
-                        toValue: 1,
-                        duration: 200,
-                        useNativeDriver: true,
-                    })
-                ]).start();
-            });
-        }
-    };
+            ]).start();
+        });
+    }
+};
 
     // ✅ Navegar a una ubicación específica
     const goToLocation = (index) => {
@@ -377,7 +376,33 @@ export default function Home() {
         month: "long",
     });
 
-    const iconMap = {
+    // Selección de animación Lottie según condición
+function getLottieSource(condition, temp = null) {
+    if (!condition) return require('../assets/lotties/Summer.json');
+    const cond = condition.toLowerCase();
+    // Si hay nieve pero la temperatura es mayor a 5°C, no mostrar nieve
+    if (cond.includes('nieve') && temp !== null && temp <= 5) return require('../assets/lotties/Weather-storm.json'); // Usa storm si no tienes nieve
+    if (cond.includes('tormenta')) return require('../assets/lotties/Weather-storm.json');
+    if (cond.includes('lluvia')) return require('../assets/lotties/Weather-storm.json');
+    if (cond.includes('nublado') || cond.includes('overcast')) return require('../assets/lotties/overcast.json');
+    if (cond.includes('viento')) return require('../assets/lotties/Weather-windy.json');
+    if (cond.includes('despejado') || cond.includes('soleado')) return require('../assets/lotties/Summer.json');
+    return require('../assets/lotties/Summer.json');
+}
+
+// Frases motivacionales según condición
+function getWeatherPhrase(condition) {
+    if (!condition) return '';
+    const cond = condition.toLowerCase();
+    if (cond.includes('lluvia') || cond.includes('tormenta')) return '¡No olvides tu paraguas hoy!';
+    if (cond.includes('nublado')) return 'Día perfecto para una taza de café.';
+    if (cond.includes('soleado') || cond.includes('despejado')) return '¡Aprovecha el sol y sal a caminar!';
+    if (cond.includes('nieve')) return '¡Abrígate bien, día nevado!';
+    if (cond.includes('viento')) return '¡Cuidado con el viento, sujeta tu sombrero!';
+    return '¡Que tengas un gran día, sin importar el clima!';
+}
+
+const iconMap = {
         "clear-day": "sunny-outline",
         "clear-night": "moon-outline",
         "partly-cloudy-day": "partly-sunny-outline",
@@ -398,107 +423,112 @@ export default function Home() {
     }
 
     return (
-    <ImageBackground source={atardecer} style={styles.container} resizeMode="cover">
-        <View style={styles.overlay} />
-        <View style={{flex: 1}}>
-            {/* Encabezado principal */}
-            <View style={styles.header}>
-                <Ionicons name="location-outline" size={22} color="#fff" />
-                <Text style={styles.location}>{weather?.location || ''}</Text>
-                <TouchableOpacity style={styles.settings}>
-                    <FontAwesome6 name="bars-staggered" size={24} color="#fff" />
-                </TouchableOpacity>
-            </View>
-            {/* Puntos indicadores dinámicos */}
-            <View style={styles.puntos}>
-                {allLocations.map((_, index) => (
-                    <TouchableOpacity
-                        key={index}
-                        style={[
-                            styles.punto,
-                            index === currentLocationIndex && styles.activePunto
-                        ]}
-                        onPress={() => goToLocation(index)}
-                    />
-                ))}
-            </View>
-            {/* ScrollView horizontal con paginación */}
-            <ScrollView
-                ref={scrollViewRef}
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                onScroll={handleScroll}
-                scrollEventThrottle={16}
-                style={{ flex: 1 }}
-                bounces={true}
-                alwaysBounceHorizontal={true}
-                decelerationRate="fast"
-                snapToInterval={width}
-                snapToAlignment="start"
-                contentContainerStyle={{ flexGrow: 1 }}
-            >
-                {allLocations.map((location, index) => (
-                    <View key={location.id || index} style={{ width, flex: 1 }}>
-                        {/* Encabezado de cada ciudad */}
-                        <View style={styles.header}>
+        <View style={styles.container}>
+            {/* Fondo con gradiente */}
+            <LinearGradient
+                colors={["#23233a", "#1E1E2C", "#222246"]}
+                style={styles.gradientBg}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+            />
+            <View style={{flex: 1}}>
+                {/* Puntos indicadores dinámicos */}
+                <View style={styles.puntos}>
+                    {allLocations.map((_, index) => (
+                        <TouchableOpacity
+                            key={index}
+                            style={[
+                                styles.punto,
+                                index === currentLocationIndex && styles.activePunto
+                            ]}
+                            onPress={() => goToLocation(index)}
+                        />
+                    ))}
+                </View>
+                {/* ScrollView horizontal con paginación */}
+                <ScrollView
+                    ref={scrollViewRef}
+                    horizontal
+                    pagingEnabled
+                    showsHorizontalScrollIndicator={false}
+                    onScroll={handleScroll}
+                    scrollEventThrottle={16}
+                    style={{ flex: 1 }}
+                    bounces={true}
+                    alwaysBounceHorizontal={true}
+                    decelerationRate="fast"
+                    snapToInterval={width}
+                    snapToAlignment="start"
+                >
+                    {allLocations.map((location, index) => (
+                        <View key={location.id || index} style={{ width, flex: 1 }}>
+                            {/* Encabezado de cada ciudad */}
+                            <View style={styles.header}>
+    <Ionicons name="location-outline" size={22} color="#6C63FF" style={{marginRight: 8}} />
+    <Text style={[styles.location, {color: '#fff', fontSize: 22, letterSpacing: 0.5, flex: 1}]} numberOfLines={1} ellipsizeMode="tail">{weather?.location || ''}</Text>
+    <TouchableOpacity style={styles.settings} onPress={() => navigation.navigate("Ciudades")}> 
+        <FontAwesome6 name="plus" size={28} color="#6C63FF" />
+    </TouchableOpacity>
+</View>
+                            {/* Fecha */}
+                            <Text style={styles.date}>{formattedDate}</Text>
+                            {/* Clima actual */}
                             {weather && (
-                                <TouchableOpacity style={styles.btnLocation}>
-                                    <LottieView
-                                        source={require("../assets/lotties/Location.json")}
-                                        autoPlay
-                                        loop
-                                        colorFilters={[{ keypath: '*', color: '#fff' }]}
-                                        style={{ width: 30, height: 30, top: 3, marginLeft: -8 }}
-                                    />
-                                    <Text style={styles.location}>{weather.location}</Text>
-                                </TouchableOpacity>
-                            )}
-                            <TouchableOpacity
-                                style={styles.settings}
-                                onPress={() => navigation.navigate("Ciudades")}
-                            >
-                                <FontAwesome6 name="plus" size={28} color="#fff" />
-                            </TouchableOpacity>
-                        </View>
-                        {/* Fecha */}
-                        <Text style={styles.date}>{formattedDate}</Text>
-                        {/* Clima actual */}
-                        {weather && (
-                            <Animated.View 
-                                style={[
-                                    styles.mainWeather,
-                                    {
-                                        opacity: fadeAnim,
-                                        transform: [{ scale: scaleAnim }]
-                                    }
-                                ]}
-                            >
-                                <LottieView
-                                    source={require('../assets/lotties/Summer.json')}
-                                    autoPlay
-                                    loop
-                                    style={{ width: 170, height: 170 }}
-                                />
-                                <Text style={styles.temp}>{weather.temperature}°C</Text>
-                                <Text style={styles.condition}>{weather.condition}</Text>
-                            </Animated.View>
-                        )}
-                        {/* Pronóstico por horas */}
-                        <View style={styles.forecast}>
-                            <Text style={styles.subtitle}>Pronóstico por horas</Text>
-                            <FlatList
-                                horizontal
-                                data={hourlyData}
-                                keyExtractor={(item, index) => index.toString()}
-                                renderItem={({ item }) => <HourlyForecast data={item} />}
-                                showsHorizontalScrollIndicator={false}
-                            />
-                        </View>
-                    </View>
-                ))}
-            </ScrollView>
+    <Animated.View 
+        style={[
+            styles.mainWeather,
+            {
+                opacity: fadeAnim,
+                transform: [{ scale: scaleAnim }]
+            }
+        ]}
+    >
+        <LottieView
+            source={getLottieSource(weather.condition, weather.temperature)}
+            autoPlay
+            loop
+            style={{ width: 170, height: 170 }}
+        />
+        <Text style={styles.temp}>{weather.temperature}°C</Text>
+        <Text style={styles.condition}>{weather.condition}</Text>
+        {/* Datos adicionales */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 16, width: '100%' }}>
+            <View style={{ alignItems: 'center', flex: 1 }}>
+                <Text style={{ color: '#aaa', fontSize: 13 }}>Sensación</Text>
+                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{weather.feelsLike}°C</Text>
+            </View>
+            <View style={{ alignItems: 'center', flex: 1 }}>
+                <Text style={{ color: '#aaa', fontSize: 13 }}>Humedad</Text>
+                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{weather.humidity}%</Text>
+            </View>
+            <View style={{ alignItems: 'center', flex: 1 }}>
+                <Text style={{ color: '#aaa', fontSize: 13 }}>Viento</Text>
+                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{weather.wind} km/h</Text>
+            </View>
+            <View style={{ alignItems: 'center', flex: 1 }}>
+                <Text style={{ color: '#aaa', fontSize: 13 }}>Presión</Text>
+                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{weather.pressure ? weather.pressure : '--'} hPa</Text>
+            </View>
         </View>
-    </ImageBackground>
-);
+        {/* Frase motivacional */}
+        <Text style={{ color: '#6C63FF', fontSize: 15, marginTop: 18, fontWeight: '600', textAlign: 'center', letterSpacing: 0.2 }}>
+            {getWeatherPhrase(weather.condition)}
+        </Text>
+    </Animated.View>
+)}
+                            {/* Pronóstico por horas */}
+                            <View style={styles.forecast}>
+                                <Text style={styles.subtitle}>Pronóstico por horas</Text>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.forecastScroll} nestedScrollEnabled={true}>
+                                    {hourlyData.map((item, index) => (
+                                        <HourlyForecast key={index} data={item} />
+                                    ))}
+                                </ScrollView>
+                            </View>
+                        </View>
+                    ))}
+                </ScrollView>
+            </View>
+        </View>
+    );
 }
