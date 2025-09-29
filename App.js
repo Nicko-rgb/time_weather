@@ -18,18 +18,42 @@ function Tabs() {
         <Tab.Navigator
             screenOptions={({ route }) => ({
                 headerShown: false,
-                tabBarIcon: ({ color, size }) => {
+                tabBarShowLabel: true,
+                tabBarLabelStyle: {
+                    fontSize: 15,
+                    fontWeight: '700',
+                    letterSpacing: 0.5,
+                    marginBottom: 4,
+                },
+                tabBarIcon: ({ color, size, focused }) => {
                     let iconName;
+                    let iconColor = focused ? '#6C63FF' : '#fff';
+                    let iconSize = focused ? 33 : 26;
                     if (route.name === 'Hoy') {
                         iconName = 'sunny-outline';
                     } else if (route.name === 'Pronóstico') {
                         iconName = 'calendar-outline';
                     }
-                    return <Ionicons name={iconName} size={size} color={color} />;
+                    return <Ionicons name={iconName} size={iconSize} color={iconColor} style={{ shadowColor: focused ? '#6C63FF' : 'transparent', shadowOpacity: 0.7, shadowRadius: 8, elevation: focused ? 12 : 0 }} />;
                 },
-                tabBarActiveTintColor: '#007AFF',
-                tabBarInactiveTintColor: 'gray',
-                tabBarStyle: { paddingBottom: 5, height: 60 },
+                tabBarActiveTintColor: '#6C63FF',
+                tabBarInactiveTintColor: '#fff',
+                tabBarStyle: {
+                    position: 'absolute',
+                    left: 16,
+                    right: 16,
+                    height: 68,
+                    borderRadius: 12,
+                    backgroundColor: 'rgba(15,10,44,0.85)',
+                    borderTopWidth: 0,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.16,
+                    shadowRadius: 18,
+                    elevation: 18,
+                    borderTopColor: 'transparent',
+                    overflow: 'hidden',
+                },
             })}
         >
             <Tab.Screen name="Hoy" component={Home} />

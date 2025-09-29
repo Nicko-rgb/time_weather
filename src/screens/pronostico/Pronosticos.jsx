@@ -14,6 +14,7 @@ import {
   FlatList,
   Dimensions
 } from 'react-native';
+import { styles } from '../../styles/stylePronostico';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -101,8 +102,8 @@ const SearchBar = ({ searchQuery, setSearchQuery, onSearch, isSearching }) => (
   </View>
 );
 
-// Componente para mostrar información del clima actual
-const CurrentWeather = ({ temperature, windspeed, weathercode, time, locationName, humidity, pressure }) => (
+// Componente para mostrar información del clima actual (actualizado)
+const CurrentWeather = ({ temperature, windspeed, weathercode, time, locationName, humidity, pressure, uv_index }) => (
   <View style={styles.currentWeatherCard}>
     <LinearGradient 
       colors={['rgba(255,255,255,0.25)', 'rgba(255,255,255,0.1)']} 
@@ -142,31 +143,105 @@ const CurrentWeather = ({ temperature, windspeed, weathercode, time, locationNam
             <Text style={styles.detailValue}>{humidity}%</Text>
           </View>
         )}
+        
+        {pressure && (
+          <View style={styles.weatherDetailItem}>
+            <MaterialIcons name="compress" size={20} color="#e2e8f0" />
+            <Text style={styles.detailText}>Presión</Text>
+            <Text style={styles.detailValue}>{Math.round(pressure)} hPa</Text>
+          </View>
+        )}
+        
+        {uv_index !== undefined && (
+          <View style={styles.weatherDetailItem}>
+            <MaterialIcons name="wb-sunny" size={20} color="#e2e8f0" />
+            <Text style={styles.detailText}>UV</Text>
+            <Text style={styles.detailValue}>{Math.round(uv_index)}</Text>
+          </View>
+        )}
       </View>
     </LinearGradient>
   </View>
 );
 
-// Componente para mostrar el pronóstico diario
+// Componente para mostrar el pronóstico diario (mejorado)
 const DailyForecastItem = ({ item, index }) => {
-  const date = new Date(item.time);
-  const isToday = index === 0;
-  const dayName = isToday ? 'Hoy' : date.toLocaleDateString('es', { weekday: 'short' });
+  // Crear fecha correctamente considerando la zona horaria local
+  const date = new Date(item.time + 'T00:00:00');
+  const today = new Date();
+  
+  // Comparar fechas correctamente
+  const isToday = date.toDateString() === today.toDateString();
+  const isTomorrow = date.toDateString() === new Date(today.getTime() + 24 * 60 * 60 * 1000).toDateString();
+  
+  let dayName;
+  if (isToday) {
+    dayName = 'Hoy';
+  } else if (isTomorrow) {
+    dayName = 'Mañana';
+  } else {
+    dayName = date.toLocaleDateString('es', { weekday: 'short' });
+  }
+  
+  const dayNumber = date.getDate();
+  const month = date.toLocaleDateString('es', { month: 'short' });
+  
+  // Función para obtener dirección del viento
+  const getWindDirection = (degrees) => {
+    const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    const index = Math.round(degrees / 45) % 8;
+    return directions[index];
+  };
   
   return (
     <View style={styles.forecastItem}>
-      <Text style={styles.forecastDay}>{dayName}</Text>
-      <MaterialIcons 
-        name={getWeatherIcon(item.weathercode)} 
-        size={32} 
-        color="#fbbf24" 
-      />
-      <View style={styles.tempRange}>
-        <Text style={styles.tempMax}>{Math.round(item.temperature_2m_max)}°</Text>
-        <Text style={styles.tempMin}>{Math.round(item.temperature_2m_min)}°</Text>
+      <View style={styles.forecastHeader}>
+        <Text style={styles.forecastDay}>{dayName}</Text>
+        <Text style={styles.forecastDate}>{dayNumber} {month}</Text>
       </View>
-      <Text style={styles.precipitationText}>
-        {item.precipitation_sum > 0 ? `${Math.round(item.precipitation_sum)}mm` : '0mm'}
+      
+      <View style={styles.forecastMain}>
+        <MaterialIcons 
+          name={getWeatherIcon(item.weathercode)} 
+          size={40} 
+          color="#fbbf24" 
+        />
+        <View style={styles.tempRange}>
+          <Text style={styles.tempMax}>{Math.round(item.temperature_2m_max)}°</Text>
+          <Text style={styles.tempMin}>{Math.round(item.temperature_2m_min)}°</Text>
+        </View>
+      </View>
+      
+      <View style={styles.forecastDetails}>
+        <View style={styles.forecastDetailRow}>
+          <MaterialIcons name="water-drop" size={16} color="#64b5f6" />
+          <Text style={styles.precipitationText}>
+            {item.precipitation_sum > 0 
+              ? `${Math.round(item.precipitation_sum)}mm lluvia` 
+              : 'Sin lluvia'
+            }
+          </Text>
+        </View>
+        
+        {item.windspeed_max && (
+          <View style={styles.forecastDetailRow}>
+            <MaterialIcons name="air" size={16} color="#81c784" />
+            <Text style={styles.windText}>
+              {Math.round(item.windspeed_max)} km/h {getWindDirection(item.wind_direction)}
+            </Text>
+          </View>
+        )}
+        
+        {item.uv_index_max !== undefined && (
+          <View style={styles.forecastDetailRow}>
+            <MaterialIcons name="wb-sunny" size={16} color="#ffb74d" />
+            <Text style={styles.uvText}>UV {Math.round(item.uv_index_max)}</Text>
+          </View>
+        )}
+      </View>
+      
+      <Text style={styles.weatherCondition}>
+        {getWeatherDescription(item.weathercode)}
       </Text>
     </View>
   );
@@ -213,8 +288,8 @@ export default function Forecast() {
     try {
       setLoading(true);
       
-      // Llamar a la API de Open-Meteo con datos diarios
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=relativehumidity_2m&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto`;
+      // Llamar a la API de Open-Meteo con más datos meteorológicos
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=relativehumidity_2m,pressure_msl,uv_index&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum,windspeed_10m_max,winddirection_10m_dominant,uv_index_max,sunrise,sunset&timezone=auto`;
       const res = await fetch(url);
       
       if (!res.ok) {
@@ -224,16 +299,23 @@ export default function Forecast() {
       const data = await res.json();
       setWeather({
         ...data.current_weather,
-        humidity: data.hourly.relativehumidity_2m[0]
+        humidity: data.hourly.relativehumidity_2m[0],
+        pressure: data.hourly.pressure_msl[0],
+        uv_index: data.hourly.uv_index[0]
       });
       
-      // Configurar el pronóstico diario (próximos 7 días)
+      // Configurar el pronóstico diario (próximos 7 días) con más información
       const dailyData = data.daily.time.slice(0, 7).map((date, index) => ({
         time: date,
         weathercode: data.daily.weathercode[index],
         temperature_2m_max: data.daily.temperature_2m_max[index],
         temperature_2m_min: data.daily.temperature_2m_min[index],
-        precipitation_sum: data.daily.precipitation_sum[index]
+        precipitation_sum: data.daily.precipitation_sum[index],
+        windspeed_max: data.daily.windspeed_10m_max[index],
+        wind_direction: data.daily.winddirection_10m_dominant[index],
+        uv_index_max: data.daily.uv_index_max[index],
+        sunrise: data.daily.sunrise[index],
+        sunset: data.daily.sunset[index]
       }));
       
       setDailyForecast(dailyData);
@@ -376,7 +458,7 @@ export default function Forecast() {
       <SafeAreaView style={styles.safeArea} edges={['right', 'left', 'top']}>
         <StatusBar barStyle="light-content" />
         <ImageBackground
-          source={{ uri: backgroundImage }}
+          // source={{ uri: backgroundImage }}
           style={styles.bg}
           blurRadius={2}
         >
@@ -402,10 +484,23 @@ export default function Forecast() {
                 time={time}
                 locationName={locationName}
                 humidity={humidity}
+                pressure={weather.pressure}
+                uv_index={weather.uv_index}
               />
               
               <View style={styles.forecastSection}>
                 <Text style={styles.sectionTitle}>Pronóstico de 7 días</Text>
+                <View style={styles.infoContainer}>
+                  <Text style={styles.infoText}>
+                    💧 mm lluvia = milímetros de precipitación esperada
+                  </Text>
+                  <Text style={styles.infoText}>
+                    🌬️ km/h = velocidad del viento en kilómetros por hora
+                  </Text>
+                  <Text style={styles.infoText}>
+                    ☀️ UV = índice ultravioleta (0-11+, mayor número = más peligroso)
+                  </Text>
+                </View>
                 <FlatList
                   data={dailyForecast}
                   renderItem={DailyForecastItem}
@@ -436,238 +531,3 @@ export default function Forecast() {
     </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#0f172a'
-  },
-  bg: { 
-    flex: 1 
-  },
-  container: {
-    flex: 1,
-    paddingHorizontal: 16
-  },
-  scrollContainer: {
-    paddingBottom: 20
-  },
-  center: { 
-    flex: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    padding: 20 
-  },
-  
-  // Search Bar Styles
-  searchContainer: {
-    flexDirection: 'row',
-    marginTop: 16,
-    marginBottom: 16,
-    alignItems: 'center'
-  },
-  searchBar: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 25,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginRight: 12,
-    backdropFilter: 'blur(10px)'
-  },
-  searchIcon: {
-    marginRight: 8
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#fff',
-    fontWeight: '500'
-  },
-  searchButton: {
-    backgroundColor: '#3b82f6',
-    borderRadius: 25,
-    padding: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    minWidth: 48
-  },
-  
-  // Current Weather Styles
-  currentWeatherCard: {
-    marginBottom: 24
-  },
-  weatherCard: { 
-    padding: 24,
-    borderRadius: 24,
-    alignItems: 'center',
-    backdropFilter: 'blur(20px)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)'
-  },
-  title: { 
-    fontSize: 24, 
-    color: '#fff', 
-    fontWeight: '700', 
-    marginBottom: 8,
-    textAlign: 'center'
-  },
-  location: {
-    fontSize: 18,
-    color: '#e2e8f0',
-    fontWeight: '600',
-    textAlign: 'center',
-    marginBottom: 8
-  },
-  time: {
-    fontSize: 14,
-    color: '#cbd5e0',
-    marginBottom: 24
-  },
-  tempContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16
-  },
-  weatherIconLarge: {
-    marginRight: 16
-  },
-  temp: { 
-    fontSize: 64, 
-    color: '#fbbf24', 
-    fontWeight: '300'
-  },
-  weatherDescription: {
-    fontSize: 20,
-    color: '#e2e8f0',
-    fontWeight: '500',
-    marginBottom: 24,
-    textAlign: 'center'
-  },
-  weatherDetails: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%'
-  },
-  weatherDetailItem: {
-    alignItems: 'center',
-    flex: 1
-  },
-  detailText: {
-    fontSize: 12,
-    color: '#cbd5e0',
-    marginTop: 4,
-    marginBottom: 2
-  },
-  detailValue: {
-    fontSize: 16,
-    color: '#fff',
-    fontWeight: '600'
-  },
-  
-  // Forecast Styles
-  forecastSection: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 20,
-    backdropFilter: 'blur(10px)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)'
-  },
-  sectionTitle: {
-    fontSize: 20,
-    color: '#fff',
-    fontWeight: '700',
-    marginBottom: 16,
-    textAlign: 'center'
-  },
-  forecastItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginBottom: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 12
-  },
-  forecastDay: {
-    fontSize: 16,
-    color: '#e2e8f0',
-    fontWeight: '600',
-    width: 60
-  },
-  tempRange: {
-    flex: 1,
-    alignItems: 'flex-end',
-    marginRight: 16
-  },
-  tempMax: {
-    fontSize: 18,
-    color: '#fff',
-    fontWeight: '700'
-  },
-  tempMin: {
-    fontSize: 14,
-    color: '#94a3b8',
-    fontWeight: '500'
-  },
-  precipitationText: {
-    fontSize: 12,
-    color: '#60a5fa',
-    fontWeight: '500',
-    width: 40,
-    textAlign: 'right'
-  },
-  
-  // Button and Footer Styles
-  locationButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#10b981',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 25,
-    marginBottom: 20,
-    alignSelf: 'center'
-  },
-  locationButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8
-  },
-  footer: {
-    alignItems: 'center',
-    marginBottom: 20
-  },
-  footerText: {
-    color: '#94a3b8',
-    fontSize: 12,
-    opacity: 0.8
-  },
-  
-  // Loading and Error Styles
-  loadingText: { 
-    color: '#fff', 
-    marginTop: 16,
-    fontSize: 16,
-    textAlign: 'center'
-  },
-  error: { 
-    color: '#ef4444', 
-    fontSize: 18,
-    textAlign: 'center',
-    marginTop: 16,
-    fontWeight: '600'
-  },
-  retryText: {
-    color: '#94a3b8',
-    marginTop: 8,
-    fontSize: 14,
-    textAlign: 'center'
-  }
-});
